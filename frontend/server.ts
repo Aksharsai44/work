@@ -9,10 +9,17 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 dotenv.config();
+
+const rootDir = process.cwd();
+
+function getDjangoBaseUrl(): string {
+  let url = (process.env.DJANGO_BACKEND_URL || process.env.BACKEND_URL || "http://127.0.0.1:8000").trim();
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    url = `https://${url}`;
+  }
+  return url.replace(/\/+$/, "");
+}
 
 function getGeminiClient(): GoogleGenAI | null {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -102,7 +109,7 @@ async function startServer() {
       return res.sendFile(altDistPath);
     }
 
-    const djangoUrl = `http://127.0.0.1:8000${req.originalUrl}`;
+    const djangoUrl = `${getDjangoBaseUrl()}${req.originalUrl}`;
     axios({
       method: req.method as any,
       url: djangoUrl,
@@ -131,7 +138,7 @@ async function startServer() {
   DJANGO_ROUTES.forEach((route) => {
     app.all(`${route}*`, async (req, res) => {
       try {
-        const djangoUrl = `http://127.0.0.1:8000${req.originalUrl}`;
+        const djangoUrl = `${getDjangoBaseUrl()}${req.originalUrl}`;
         const headers: Record<string, string> = {
           "Content-Type": req.headers["content-type"] || "application/json",
         };

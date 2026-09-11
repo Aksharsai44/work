@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: mind2i_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mind2i_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mind2i_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mind2i_backend
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      DEBUG: "False"
+      SECRET_KEY: "django-production-secret-key-replace-me"
+      DATABASE_URL: "postgres://postgres:mind2i_password@db:5432/mind2i_db"
+      ALLOWED_HOSTS: "*"
+      CSRF_TRUSTED_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000"
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_media:/app/media
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mind2i_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: "production"
+      PORT: 3000
+      DJANGO_BACKEND_URL: "http://backend:8000"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:
+  backend_media:

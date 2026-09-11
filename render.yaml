@@ -1,0 +1,53 @@
+services:
+  # 1. Django REST Backend API Service
+  - type: web
+    name: mind2i-backend
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: "./backend/build.sh"
+    startCommand: "cd backend && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mind2i-db
+          property: connectionString
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com,localhost,127.0.0.1"
+      - key: CSRF_TRUSTED_ORIGINS
+        value: "https://*.onrender.com,http://localhost:3000"
+
+  # 2. Node Express + React Frontend Service
+  - type: web
+    name: mind2i-frontend
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: "cd frontend && npm install && npm run build"
+    startCommand: "cd frontend && npm start"
+    envVars:
+      - key: NODE_VERSION
+        value: 20.12.0
+      - key: NODE_ENV
+        value: production
+      - key: DJANGO_BACKEND_URL
+        fromService:
+          type: web
+          name: mind2i-backend
+          property: host
+      - key: GEMINI_API_KEY
+        sync: false
+
+databases:
+  # Managed PostgreSQL Database
+  - name: mind2i-db
+    region: oregon
+    plan: free
+    databaseName: mind2i_db
+    user: mind2i_user
