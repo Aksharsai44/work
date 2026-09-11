@@ -14,11 +14,29 @@ dotenv.config();
 const rootDir = process.cwd();
 
 function getDjangoBaseUrl(): string {
-  let url = (process.env.DJANGO_BACKEND_URL || process.env.BACKEND_URL || "http://127.0.0.1:8000").trim();
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    url = `https://${url}`;
+  let raw = (process.env.DJANGO_BACKEND_URL || process.env.BACKEND_URL || "http://127.0.0.1:8000").trim();
+
+  // Strip existing protocol to analyze host
+  const hasProtocol = raw.startsWith("http://") || raw.startsWith("https://");
+  let protocol = raw.startsWith("http://") ? "http://" : "https://";
+  let hostAndPath = hasProtocol ? raw.replace(/^https?:\/\//, "") : raw;
+
+  // Render passes service slugs like 'mind2i-backend-so6s' via fromService host property
+  // If no dot, not localhost/127.0.0.1, and no custom port specified, append .onrender.com
+  if (
+    !hostAndPath.includes(".") &&
+    !hostAndPath.includes("localhost") &&
+    !hostAndPath.includes("127.0.0.1") &&
+    !hostAndPath.includes(":")
+  ) {
+    hostAndPath = `${hostAndPath}.onrender.com`;
+    protocol = "https://";
+  } else if (!hasProtocol) {
+    protocol = hostAndPath.includes("localhost") || hostAndPath.includes("127.0.0.1") ? "http://" : "https://";
   }
-  return url.replace(/\/+$/, "");
+
+  const finalUrl = `${protocol}${hostAndPath}`.replace(/\/+$/, "");
+  return finalUrl;
 }
 
 function getGeminiClient(): GoogleGenAI | null {
@@ -153,12 +171,12 @@ async function startServer() {
           data: isBodyAllowed ? req.body : undefined,
           params: req.query,
           headers,
-          timeout: 8000,
+          timeout: 30000,
           validateStatus: () => true,
         });
         res.status(response.status).json(response.data);
       } catch (err: any) {
-        console.error(`Error proxying ${req.method} ${req.originalUrl} to Django:`, err.message);
+        console.error(`Error proxying ${req.method} ${req.originalUrl} to Django (${djangoUrl}):`, err.message);
         res.status(500).json({ error: "Django backend unreachable", details: err.message });
       }
     });
@@ -1225,6 +1243,7 @@ RULES:
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`MIND2I Workshop & Bootcamp Server running on http://localhost:${PORT}`);
+    console.log(`Django backend proxy target: ${getDjangoBaseUrl()}`);
   });
 }
 
