@@ -1,6 +1,7 @@
 from rest_framework import viewsets, status
-from rest_framework.decorators import api_view, parser_classes, action
+from rest_framework.decorators import api_view, parser_classes, action, permission_classes, authentication_classes
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django.conf import settings
 from .models import (
@@ -803,6 +804,8 @@ def learnhub_file_upload_view(request):
 
 
 @api_view(['POST'])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def login_view(request):
     email = request.data.get('email', '').strip()
     password = request.data.get('password', '').strip()

@@ -24,6 +24,7 @@ router.register(r'scheduled-meetings', ScheduledMeetingViewSet)
 
 urlpatterns = [
     path('login/', login_view, name='login'),
+    path('login', login_view, name='login_no_slash'),
     path('learnhub/upload/', learnhub_file_upload_view, name='learnhub_file_upload'),
     path('', include(router.urls)),
 ]

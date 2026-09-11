@@ -25,17 +25,39 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess }) => {
     setIsLoading(true);
     setError(null);
 
+    let authPayload: { role: "admin" | "student"; user: any } | null = null;
+
     try {
-      const res = await axios.post('/api/login/', { email, password });
-      onLoginSuccess(res.data.role, res.data.user);
+      const res = await axios.post('/api/login/', { email: email.trim(), password: password.trim() });
+      authPayload = { role: res.data.role, user: res.data.user };
     } catch (err: any) {
-      if (err.response && err.response.data && err.response.data.error) {
-        setError(err.response.data.error);
+      console.error("Login request error:", err);
+      const serverMsg =
+        err.response?.data?.error ||
+        err.response?.data?.detail ||
+        err.response?.data?.message ||
+        (typeof err.response?.data === 'string' && err.response.data.length < 200 ? err.response.data : null);
+
+      if (serverMsg) {
+        setError(serverMsg);
+      } else if (err.message) {
+        setError(`Login failed: ${err.message}`);
       } else {
-        setError("An unexpected error occurred. Please try again.");
+        setError("Unable to connect to server. Please check your network connection.");
       }
-    } finally {
       setIsLoading(false);
+      return;
+    }
+
+    if (authPayload) {
+      try {
+        onLoginSuccess(authPayload.role, authPayload.user);
+      } catch (uiErr: any) {
+        console.error("Error setting session after login:", uiErr);
+        setError("Error loading dashboard session. Please refresh the page.");
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
