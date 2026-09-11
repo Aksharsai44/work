@@ -1,0 +1,518 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  body {
+    background-color: #f8f9fc;
+    color: #1e293b;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Learn Hub Highlighted Badges (matching reference style + rich animations) */
+.highlight-term {
+  cursor: pointer;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.03);
+  user-select: none;
+  vertical-align: baseline;
+  font-size: 0.95em;
+  position: relative;
+}
+
+.highlight-term:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 16px -2px rgba(99, 102, 241, 0.18), 0 0 0 2px rgba(99, 102, 241, 0.25);
+}
+
+.highlight-term:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.term-llm {
+  color: #4f46e5;
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+  border: 1px solid #ddd6fe;
+}
+.term-llm:hover {
+  background: #e0e7ff;
+  border-color: #818cf8;
+  color: #3730a3;
+  box-shadow: 0 6px 16px -2px rgba(79, 70, 229, 0.25), 0 0 0 2px rgba(99, 102, 241, 0.3);
+}
+
+.term-api {
+  color: #047857;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1px solid #a7f3d0;
+}
+.term-api:hover {
+  background: #ccfbf1;
+  border-color: #34d399;
+  color: #065f46;
+  box-shadow: 0 6px 16px -2px rgba(16, 185, 129, 0.25), 0 0 0 2px rgba(16, 185, 129, 0.3);
+}
+
+.term-nexos {
+  color: #c2410c;
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  border: 1px solid #fed7aa;
+}
+.term-nexos:hover {
+  background: #ffedd5;
+  border-color: #fb923c;
+  color: #9a3412;
+  box-shadow: 0 6px 16px -2px rgba(249, 115, 22, 0.25), 0 0 0 2px rgba(249, 115, 22, 0.3);
+}
+
+.term-crewai {
+  color: #be185d;
+  background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+  border: 1px solid #fbcfe8;
+}
+.term-crewai:hover {
+  background: #fce7f3;
+  border-color: #f472b6;
+  color: #9d174d;
+  box-shadow: 0 6px 16px -2px rgba(236, 72, 153, 0.25), 0 0 0 2px rgba(236, 72, 153, 0.3);
+}
+
+.term-agent {
+  color: #0369a1;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+}
+.term-agent:hover {
+  background: #e0f2fe;
+  border-color: #38bdf8;
+  color: #075985;
+  box-shadow: 0 6px 16px -2px rgba(14, 165, 233, 0.25), 0 0 0 2px rgba(14, 165, 233, 0.3);
+}
+
+.term-python {
+  color: #b45309;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid #fde68a;
+}
+.term-python:hover {
+  background: #fef3c7;
+  border-color: #fbbf24;
+  color: #92400e;
+  box-shadow: 0 6px 16px -2px rgba(245, 158, 11, 0.25), 0 0 0 2px rgba(245, 158, 11, 0.3);
+}
+
+.term-database {
+  color: #6d28d9;
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+  border: 1px solid #e9d5ff;
+}
+.term-database:hover {
+  background: #f3e8ff;
+  border-color: #a855f7;
+  color: #5b21b6;
+  box-shadow: 0 6px 16px -2px rgba(168, 85, 247, 0.25), 0 0 0 2px rgba(168, 85, 247, 0.3);
+}
+
+.term-custom {
+  color: #4338ca;
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  border: 1px solid #c7d2fe;
+}
+.term-custom:hover {
+  background: #e0e7ff;
+  border-color: #818cf8;
+  color: #3730a3;
+  box-shadow: 0 6px 16px -2px rgba(99, 102, 241, 0.25), 0 0 0 2px rgba(99, 102, 241, 0.3);
+}
+
+/* Shimmer animation */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.animate-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.animate-shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  animation: shimmer 2.5s infinite;
+}
+
+/* Audio wave bars */
+@keyframes soundwave-1 {
+  0%, 100% { height: 4px; }
+  50% { height: 16px; }
+}
+@keyframes soundwave-2 {
+  0%, 100% { height: 12px; }
+  50% { height: 4px; }
+}
+@keyframes soundwave-3 {
+  0%, 100% { height: 8px; }
+  50% { height: 18px; }
+}
+@keyframes soundwave-4 {
+  0%, 100% { height: 15px; }
+  50% { height: 6px; }
+}
+
+.audio-bar-1 { animation: soundwave-1 0.8s ease-in-out infinite; }
+.audio-bar-2 { animation: soundwave-2 0.7s ease-in-out infinite 0.15s; }
+.audio-bar-3 { animation: soundwave-3 0.9s ease-in-out infinite 0.3s; }
+.audio-bar-4 { animation: soundwave-4 0.6s ease-in-out infinite 0.2s; }
+
+/* Subtle floating gradient animation */
+@keyframes float-glow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(10px, -15px) scale(1.08); }
+}
+
+.animate-float-glow {
+  animation: float-glow 8s ease-in-out infinite;
+}
+
+/* Animated keyframe for interactive pulse */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(1.02); }
+}
+
+.pulse-subtle {
+  animation: pulse-subtle 3s infinite ease-in-out;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ============================================= */
+/* MIND2I Code Editor – Syntax Highlighting       */
+/* ============================================= */
+
+/* Light theme (default) */
+.syn-keyword { color: #7c3aed; font-weight: 700; }
+.syn-keyword-def { color: #2563eb; font-weight: 800; }
+.syn-string { color: #059669; }
+.syn-number { color: #d97706; }
+.syn-comment { color: #94a3b8; font-style: italic; }
+.syn-const { color: #dc2626; font-weight: 700; }
+.syn-self { color: #9333ea; font-style: italic; }
+.syn-func { color: #0284c7; }
+.syn-decorator { color: #c026d3; font-weight: 600; }
+
+/* Dark theme overrides (applied via parent class) */
+.dark .syn-keyword,
+[data-theme="dark"] .syn-keyword { color: #c084fc; }
+.dark .syn-keyword-def,
+[data-theme="dark"] .syn-keyword-def { color: #60a5fa; font-weight: 800; }
+.dark .syn-string,
+[data-theme="dark"] .syn-string { color: #34d399; }
+.dark .syn-number,
+[data-theme="dark"] .syn-number { color: #fbbf24; }
+.dark .syn-comment,
+[data-theme="dark"] .syn-comment { color: #64748b; font-style: italic; }
+.dark .syn-const,
+[data-theme="dark"] .syn-const { color: #f87171; }
+.dark .syn-self,
+[data-theme="dark"] .syn-self { color: #a78bfa; font-style: italic; }
+.dark .syn-func,
+[data-theme="dark"] .syn-func { color: #38bdf8; }
+.dark .syn-decorator,
+[data-theme="dark"] .syn-decorator { color: #e879f9; }
+
+/* ============================================= */
+/* Executive Evaluation Report Print & PDF Styles */
+/* ============================================= */
+@page {
+  size: A4 portrait;
+  margin: 8mm 7mm;
+}
+
+@media print {
+  /* Force exact colors, borders, and background graphics */
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide app navigation chrome, sidebars, buttons, dropdowns, and overlays */
+  header,
+  aside,
+  nav,
+  button,
+  select,
+  .no-print,
+  .print-hide,
+  .print\:hidden {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Reset layout constraints so all pages print without viewport clipping */
+  #root,
+  .app-container,
+  main,
+  div {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
+  /* Container and printable document */
+  .executive-report-container {
+    position: static !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    display: block !important;
+    width: 100% !important;
+  }
+
+  #printable-executive-report,
+  #printable-batch-report {
+    max-width: 100% !important;
+    width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    background: #ffffff !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  /* Allow grid containers and section wrappers to break naturally across pages */
+  #printable-executive-report > div,
+  #printable-batch-report > div,
+  .domain-cards-grid {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  /* Keep individual domain cards, AI synthesis section, and footer intact */
+  .domain-card,
+  .ai-synthesis-card,
+  .report-footer,
+  .break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* ── Preserved & Optimized Grid Layouts in Print ── */
+  /* Force 2-column layout for Domain Priority Cards Grid */
+  .domain-cards-grid,
+  #printable-executive-report .domain-cards-grid,
+  #printable-executive-report .grid-cols-1.md\:grid-cols-2 {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  /* Force Cards 7, 8, 9 (and any full-width cards) to span 100% full width */
+  #printable-executive-report .col-span-1.md\:col-span-2,
+  #printable-executive-report .md\:col-span-2,
+  #printable-executive-report .print\:col-span-2,
+  #printable-executive-report .col-span-2,
+  .domain-card.col-span-1.md\:col-span-2,
+  .domain-card.print\:col-span-2 {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+  }
+
+  /* Force 4-column layout for Top 4 Core KPI cards */
+  #printable-executive-report .grid-cols-2.lg\:grid-cols-4,
+  #printable-executive-report .print\:grid-cols-4 {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+  #printable-executive-report .grid-cols-2.lg\:grid-cols-4 > div {
+    padding: 6px 8px !important;
+    border-radius: 12px !important;
+  }
+
+  /* Force 12-column subgrid inside individual domain cards */
+  #printable-executive-report .sm\:grid-cols-12,
+  #printable-executive-report .md\:grid-cols-12,
+  #printable-executive-report .print\:grid-cols-12 {
+    display: grid !important;
+    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+  #printable-executive-report .sm\:col-span-5,
+  #printable-executive-report .md\:col-span-5,
+  #printable-executive-report .print\:col-span-5 {
+    grid-column: span 5 / span 5 !important;
+  }
+  #printable-executive-report .sm\:col-span-7,
+  #printable-executive-report .md\:col-span-7,
+  #printable-executive-report .print\:col-span-7 {
+    grid-column: span 7 / span 7 !important;
+  }
+  #printable-executive-report .sm\:col-span-6,
+  #printable-executive-report .md\:col-span-6,
+  #printable-executive-report .print\:col-span-6 {
+    grid-column: span 6 / span 6 !important;
+  }
+
+  /* Force 3 columns for KPI blocks in Cards 7, 8, 9 */
+  #printable-executive-report .sm\:grid-cols-3,
+  #printable-executive-report .print\:grid-cols-3 {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+  #printable-executive-report .sm\:grid-cols-3 > div {
+    padding: 6px 8px !important;
+    border-radius: 10px !important;
+  }
+
+  /* Force 2 columns for Strengths & Advisory in AI Synthesis */
+  #printable-executive-report .ai-synthesis-card .md\:grid-cols-2,
+  #printable-executive-report .ai-synthesis-card .sm\:grid-cols-2,
+  #printable-executive-report .ai-synthesis-card .print\:grid-cols-2 {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  /* ── Compact Spacing & Padding Overrides for Print ── */
+  #printable-executive-report .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 8px !important;
+  }
+  #printable-executive-report .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 6px !important;
+  }
+  #printable-executive-report .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 4px !important;
+  }
+  #printable-executive-report .space-y-2\.5 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 3px !important;
+  }
+
+  /* Domain card compact dimensions */
+  .domain-card {
+    padding: 8px 12px !important;
+    border-radius: 14px !important;
+  }
+  .domain-card h3 {
+    font-size: 11.5px !important;
+    line-height: 1.2 !important;
+  }
+  .domain-card .w-9.h-9,
+  .domain-card .w-10.h-10 {
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 8px !important;
+  }
+  .domain-card svg.w-4.h-4,
+  .domain-card svg.w-5.h-5 {
+    width: 13px !important;
+    height: 13px !important;
+  }
+
+  /* Circular SVG charts compact scaling */
+  .domain-card .w-24.h-24,
+  .domain-card svg.w-24.h-24 {
+    width: 68px !important;
+    height: 68px !important;
+  }
+  .domain-card .w-28.h-28,
+  .domain-card svg.w-28.h-28 {
+    width: 72px !important;
+    height: 72px !important;
+  }
+  .domain-card .w-20.h-20,
+  .domain-card svg.w-20.h-20 {
+    width: 60px !important;
+    height: 60px !important;
+  }
+
+  /* Compact bottom metric pills inside domain cards */
+  .domain-card .grid-cols-4 {
+    gap: 4px !important;
+    padding-top: 2px !important;
+  }
+  .domain-card .grid-cols-4 > div {
+    padding: 2px 4px !important;
+    border-radius: 8px !important;
+  }
+  .domain-card .grid-cols-4 span.text-xs {
+    font-size: 10px !important;
+  }
+
+  /* AI synthesis card compact */
+  .ai-synthesis-card {
+    padding: 10px 14px !important;
+    border-radius: 14px !important;
+    margin-top: 8px !important;
+  }
+  .ai-synthesis-card .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 6px !important;
+  }
+
+  /* Footer compact */
+  .report-footer {
+    padding: 6px 10px !important;
+    border-radius: 10px !important;
+    margin-top: 6px !important;
+  }
+
+  /* Ensure text colors, contrast, and links render crisp */
+  a {
+    text-decoration: none !important;
+    color: inherit !important;
+  }
+}

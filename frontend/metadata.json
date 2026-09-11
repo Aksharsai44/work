@@ -1,0 +1,6 @@
+{
+  "name": "MIND2I Workshop & Bootcamp Hub",
+  "description": "Comprehensive Workshop & Bootcamp Management System with interactive Learn Hub, AI assignment generator, live Q&A polls, in-browser Coding IDE, certificate designer, and batch analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
