@@ -1,4 +1,4 @@
-# MIND2I Workshop & Bootcamp Hub — Deployment Guide
+ï»¿# MIND2I Workshop & Bootcamp Hub ï¿½ Deployment Guide
 
 This guide details how to deploy the fullstack **MIND2I Workshop & Bootcamp Hub** application to production directly from the GitHub repository:  
 **[`https://github.com/Aksharsai44/work.git`](https://github.com/Aksharsai44/work.git)**
@@ -13,7 +13,7 @@ This guide details how to deploy the fullstack **MIND2I Workshop & Bootcamp Hub*
 
 ---
 
-## Option 1: Render.com (Recommended — 1-Click Blueprint)
+## Option 1: Render.com (Recommended ï¿½ 1-Click Blueprint)
 
 The repository includes a ready-to-use [`render.yaml`](./render.yaml) blueprint that automatically provisions the PostgreSQL database, Django backend, and Node frontend.
 
