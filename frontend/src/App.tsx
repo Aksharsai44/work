@@ -351,6 +351,11 @@ export default function App() {
       .catch(err => console.error("API Fetch Error (Students):", err));
   }, [selectedBatch?.id]);
 
+  // Proactive background wake-up ping for sleeping/cold-start backends
+  useEffect(() => {
+    axios.get('/api/health').catch(() => {});
+  }, []);
+
   // Fetch real data from Django backend
   useEffect(() => {
     axios.get('/api/batches/')

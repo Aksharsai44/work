@@ -797,10 +797,17 @@ def learnhub_file_upload_view(request):
         "name": filename,
         "size": size_str,
         "type": file_type,
-        "uploadedAt": datetime.utctimezone.now().isoformat() + "Z",
+        "uploadedAt": timezone.now().isoformat(),
         "fileUrl": media_url,
         "previewUrl": media_url,
     }, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def health_check_view(request):
+    return Response({"status": "ok", "backend": "django", "timestamp": timezone.now().isoformat()})
 
 
 @api_view(['POST'])

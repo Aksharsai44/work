@@ -1,0 +1,20 @@
+{
+  "name": "mind2i-workshop-bootcamp-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MIND2I Workshop & Bootcamp Hub - Fullstack Real-Time Education Platform",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "start": "npm --prefix frontend run start",
+    "backend": "cd backend && python manage.py runserver 127.0.0.1:8000"
+  },
+  "keywords": [
+    "education",
+    "django",
+    "react",
+    "bootcamp"
+  ],
+  "author": "MIND2I",
+  "license": "ISC"
+}

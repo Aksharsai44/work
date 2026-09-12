@@ -14,29 +14,197 @@ dotenv.config();
 const rootDir = process.cwd();
 
 function getDjangoBaseUrl(): string {
-  let raw = (process.env.DJANGO_BACKEND_URL || process.env.BACKEND_URL || "http://127.0.0.1:8000").trim();
+  // Support explicit public backend URL (e.g. from Render dashboard env var)
+  let raw = (
+    process.env.PUBLIC_BACKEND_URL ||
+    process.env.BACKEND_PUBLIC_URL ||
+    process.env.BACKEND_URL ||
+    process.env.DJANGO_BACKEND_URL ||
+    "http://127.0.0.1:8000"
+  ).trim();
 
   // Strip existing protocol to analyze host
   const hasProtocol = raw.startsWith("http://") || raw.startsWith("https://");
   let protocol = raw.startsWith("http://") ? "http://" : "https://";
   let hostAndPath = hasProtocol ? raw.replace(/^https?:\/\//, "") : raw;
 
-  // Render passes service slugs like 'mind2i-backend-so6s' via fromService host property
-  // If no dot, not localhost/127.0.0.1, and no custom port specified, append .onrender.com
-  if (
-    !hostAndPath.includes(".") &&
-    !hostAndPath.includes("localhost") &&
-    !hostAndPath.includes("127.0.0.1") &&
-    !hostAndPath.includes(":")
-  ) {
-    hostAndPath = `${hostAndPath}.onrender.com`;
-    protocol = "https://";
-  } else if (!hasProtocol) {
-    protocol = hostAndPath.includes("localhost") || hostAndPath.includes("127.0.0.1") ? "http://" : "https://";
+  const isLocal = hostAndPath.includes("localhost") || hostAndPath.includes("127.0.0.1");
+
+  if (!isLocal) {
+    // Check for port like :10000 (Render default port for internal web services)
+    const portMatch = hostAndPath.match(/^([^:/]+):(\d+)$/);
+    if (portMatch) {
+      const hostname = portMatch[1];
+      const port = portMatch[2];
+      // On Render free tier, web services cannot use internal networking.
+      // If no dot in hostname, resolve to public onrender URL
+      if (!hostname.includes(".")) {
+        hostAndPath = `${hostname}.onrender.com`;
+        protocol = "https://";
+      } else {
+        protocol = hasProtocol ? protocol : (port === "443" ? "https://" : "http://");
+      }
+    } else if (!hostAndPath.includes(".")) {
+      // e.g. 'mind2i-backend' without dot
+      hostAndPath = `${hostAndPath}.onrender.com`;
+      protocol = "https://";
+    }
+  }
+
+  if (!hasProtocol) {
+    protocol = isLocal ? "http://" : "https://";
   }
 
   const finalUrl = `${protocol}${hostAndPath}`.replace(/\/+$/, "");
   return finalUrl;
+}
+
+function getDjangoCandidateUrls(): string[] {
+  const primary = getDjangoBaseUrl();
+  const urls = [primary];
+
+  // If primary was resolved to https://something.onrender.com from an internal slug, also offer internal http fallback
+  const raw = (process.env.DJANGO_BACKEND_URL || "").trim();
+  const isLocal = primary.includes("localhost") || primary.includes("127.0.0.1");
+
+  if (!isLocal && raw) {
+    const rawNoProto = raw.replace(/^https?:\/\//, "");
+    if (!rawNoProto.includes(".")) {
+      const slug = rawNoProto.split(":")[0];
+      const internalUrl = `http://${slug}:10000`;
+      if (!urls.includes(internalUrl)) urls.push(internalUrl);
+    }
+  }
+  return urls;
+}
+
+let djangoProcess: any = null;
+
+async function ensureLocalDjangoRunning() {
+  const targetUrl = getDjangoBaseUrl();
+  const isLocal = targetUrl.includes("localhost") || targetUrl.includes("127.0.0.1");
+  if (!isLocal) {
+    return; // Cloud backend
+  }
+
+  // Check if Django is already running and reachable
+  try {
+    const res = await axios.get(`${targetUrl}/api/health/`, { timeout: 1200 });
+    console.log(`[Django Backend] Active and responsive at ${targetUrl}`);
+    return;
+  } catch (err: any) {
+    if (err.response) {
+      console.log(`[Django Backend] Active at ${targetUrl} (responded with status ${err.response.status})`);
+      return;
+    }
+  }
+
+  console.log(`[Django Backend] Not detected on ${targetUrl}. Automatically starting local Django backend...`);
+
+  // Detect manage.py path
+  const candidateDirs = [
+    path.resolve(rootDir, "..", "backend"),
+    path.resolve(rootDir, "backend"),
+  ];
+  let backendDir = candidateDirs.find((d) => fs.existsSync(path.join(d, "manage.py")));
+  if (!backendDir) {
+    console.warn("[Django Backend] Could not locate backend/manage.py directory to auto-start.");
+    return;
+  }
+
+  const managePy = path.join(backendDir, "manage.py");
+  const isWin = process.platform === "win32";
+
+  // Find Python binary: check venv first
+  const pythonCandidates = [
+    path.join(backendDir, "venv", isWin ? "Scripts/python.exe" : "bin/python"),
+    path.join(backendDir, ".venv", isWin ? "Scripts/python.exe" : "bin/python"),
+    path.resolve(rootDir, "..", "backend", "venv", isWin ? "Scripts/python.exe" : "bin/python"),
+    process.env.PYTHON || "",
+    isWin ? "python.exe" : "python3",
+    "python",
+  ].filter(Boolean);
+
+  let pythonExec: string | null = null;
+  for (const candidate of pythonCandidates) {
+    if (fs.existsSync(candidate)) {
+      pythonExec = candidate;
+      break;
+    }
+  }
+  if (!pythonExec) {
+    pythonExec = isWin ? "python" : "python3";
+  }
+
+  console.log(`[Django Backend] Launching: ${pythonExec} manage.py runserver 127.0.0.1:8000`);
+
+  try {
+    djangoProcess = spawn(pythonExec, [managePy, "runserver", "127.0.0.1:8000"], {
+      cwd: backendDir,
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, PYTHONUNBUFFERED: "1" },
+      shell: false,
+    });
+
+    djangoProcess.stdout?.on("data", (data: Buffer) => {
+      const msg = data.toString().trim();
+      if (msg) console.log(`[Django] ${msg}`);
+    });
+
+    djangoProcess.stderr?.on("data", (data: Buffer) => {
+      const msg = data.toString().trim();
+      if (msg && !msg.includes("Watching for file changes") && !msg.includes("Performing system checks")) {
+        console.warn(`[Django err] ${msg}`);
+      }
+    });
+
+    djangoProcess.on("exit", (code: number) => {
+      console.log(`[Django Backend] Process stopped (code: ${code})`);
+      djangoProcess = null;
+    });
+
+    // Cleanup when Node exits
+    const cleanup = () => {
+      if (djangoProcess && djangoProcess.pid) {
+        console.log("[Django Backend] Shutting down Django server...");
+        try {
+          if (isWin) {
+            spawn("taskkill", ["/pid", djangoProcess.pid.toString(), "/f", "/t"]);
+          } else {
+            djangoProcess.kill("SIGTERM");
+          }
+        } catch (e) {}
+        djangoProcess = null;
+      }
+    };
+
+    process.once("exit", cleanup);
+    process.once("SIGINT", () => {
+      cleanup();
+      process.exit(0);
+    });
+    process.once("SIGTERM", () => {
+      cleanup();
+      process.exit(0);
+    });
+
+    // Wait up to 10 seconds for Django to initialize
+    for (let i = 0; i < 15; i++) {
+      await new Promise((r) => setTimeout(r, 600));
+      try {
+        await axios.get(`${targetUrl}/api/health/`, { timeout: 1000 });
+        console.log(`[Django Backend] Ready and listening on ${targetUrl}`);
+        break;
+      } catch (e: any) {
+        if (e.response) {
+          console.log(`[Django Backend] Ready and listening on ${targetUrl}`);
+          break;
+        }
+      }
+    }
+  } catch (err: any) {
+    console.error("[Django Backend] Failed to spawn Django process:", err.message);
+  }
 }
 
 function getGeminiClient(): GoogleGenAI | null {
@@ -58,12 +226,29 @@ async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
+  // Auto-launch local Django backend if not currently running
+  await ensureLocalDjangoRunning();
+
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-  // Health check
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  // Proactive Health Check & Django Wake-up
+  app.get("/api/health", async (req, res) => {
+    const djangoUrl = `${getDjangoBaseUrl()}/api/health/`;
+    let backendStatus = "unknown";
+    try {
+      const dRes = await axios.get(djangoUrl, { timeout: 3500 });
+      backendStatus = dRes.status === 200 ? "ok" : `status_${dRes.status}`;
+    } catch (err: any) {
+      backendStatus = "offline_or_waking";
+    }
+    res.json({
+      status: "ok",
+      node: "ok",
+      backend: backendStatus,
+      target: getDjangoBaseUrl(),
+      timestamp: new Date().toISOString(),
+    });
   });
 
   // Local Network IP info for Mobile scanning
@@ -155,45 +340,74 @@ async function startServer() {
 
   DJANGO_ROUTES.forEach((route) => {
     app.all(`${route}*`, async (req, res) => {
-      const djangoUrl = `${getDjangoBaseUrl()}${req.originalUrl}`;
-      const headers: Record<string, string> = {
-        "Content-Type": req.headers["content-type"] || "application/json",
-      };
+      const candidateUrls = getDjangoCandidateUrls();
+      const headers: Record<string, string> = {};
+
+      if (req.headers["content-type"]) {
+        headers["Content-Type"] = req.headers["content-type"];
+      } else if (req.method !== "GET" && req.method !== "HEAD") {
+        headers["Content-Type"] = "application/json";
+      }
+
       if (req.headers.authorization) {
         headers["Authorization"] = req.headers.authorization;
       }
 
       const isBodyAllowed = req.method !== "GET" && req.method !== "HEAD" && req.method !== "DELETE";
 
-      const sendRequest = () =>
+      const isLocal = candidateUrls[0].includes("localhost") || candidateUrls[0].includes("127.0.0.1");
+      const maxRetries = isLocal ? 6 : 24; // Up to 60s for Render cloud cold-start spin-up
+      const retryDelayMs = 2500;
+      let lastErr: any = null;
+      let response: any = null;
+
+      const sendRequest = (baseUrl: string) =>
         axios({
           method: req.method,
-          url: djangoUrl,
+          url: `${baseUrl}${req.originalUrl}`,
           data: isBodyAllowed ? req.body : undefined,
           params: req.query,
           headers,
-          timeout: 75000,
+          timeout: 55000,
           validateStatus: () => true,
         });
 
-      try {
-        let response = await sendRequest();
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        // Rotate candidate URLs if multiple are available
+        const targetBase = candidateUrls[(attempt - 1) % candidateUrls.length];
+        try {
+          response = await sendRequest(targetBase);
 
-        // If upstream returns 502/503/504 (Render container spinning up from sleep), retry once after 3s
-        if ([502, 503, 504].includes(response.status)) {
-          console.warn(`Upstream ${response.status} from Django, retrying in 3s (cold start spinup)...`);
-          await new Promise((r) => setTimeout(r, 3000));
-          response = await sendRequest();
+          // Upstream returned 502/503/504 (cold start spinup or temporary gateway blip)
+          if ([502, 503, 504].includes(response.status) && attempt < maxRetries) {
+            console.warn(`[Proxy] Upstream ${response.status} from Django on ${targetBase}${req.originalUrl} (attempt ${attempt}/${maxRetries}), retrying in ${retryDelayMs}ms...`);
+            await new Promise((r) => setTimeout(r, retryDelayMs));
+            continue;
+          }
+
+          // Return successful or expected HTTP status code (200, 201, 400, 401, etc.)
+          return res.status(response.status).json(response.data);
+        } catch (err: any) {
+          lastErr = err;
+          // Connection refused, timeout, or DNS failure (backend starting up)
+          if (attempt < maxRetries) {
+            console.warn(`[Proxy] Connection failed (${err.message}) to ${targetBase}${req.originalUrl} (attempt ${attempt}/${maxRetries}), retrying in ${retryDelayMs}ms...`);
+            await new Promise((r) => setTimeout(r, retryDelayMs));
+          }
         }
-
-        res.status(response.status).json(response.data);
-      } catch (err: any) {
-        console.error(`Error proxying ${req.method} ${req.originalUrl} to Django (${djangoUrl}):`, err.message);
-        res.status(502).json({
-          error: "Cloud backend is currently waking up from sleep mode. Please retry in a few seconds.",
-          details: err.message,
-        });
       }
+
+      // If we got an upstream response after exhausting retries
+      if (response) {
+        return res.status(response.status).json(response.data);
+      }
+
+      // If backend was completely unreachable
+      console.error(`[Proxy] All retries exhausted proxying ${req.method} ${req.originalUrl} to Django:`, lastErr?.message);
+      return res.status(502).json({
+        error: "Backend server is currently waking up or initializing. Please retry in a few seconds.",
+        details: lastErr?.message,
+      });
     });
   });
 

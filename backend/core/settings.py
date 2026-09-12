@@ -41,8 +41,8 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-v$71v%&c@w$@3umcm_s!w
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 allowed_hosts_env = os.environ.get('ALLOWED_HOSTS')
-if allowed_hosts_env:
-    ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(',') if h.strip()]
+if allowed_hosts_env and '*' not in allowed_hosts_env:
+    ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(',') if h.strip()] + ['*']
 else:
     ALLOWED_HOSTS = ['*']
 
@@ -53,6 +53,8 @@ else:
     CSRF_TRUSTED_ORIGINS = [
         'http://localhost:3000',
         'http://127.0.0.1:3000',
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
         'https://*.onrender.com',
         'https://*.railway.app',
     ]
@@ -121,6 +123,23 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+def _test_postgres(dbname, user, password, host, port):
+    try:
+        import psycopg2
+        conn = psycopg2.connect(
+            dbname=dbname,
+            user=user,
+            password=password,
+            host=host,
+            port=port,
+            connect_timeout=2
+        )
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"[Settings] PostgreSQL connection failed ({host}:{port}/{dbname}): {e}")
+        return False
+
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL and dj_database_url:
     DATABASES = {
@@ -130,28 +149,32 @@ if DATABASE_URL and dj_database_url:
             conn_health_checks=True,
         )
     }
-elif os.environ.get('DB_NAME') and os.environ.get('DB_HOST') and os.environ.get('DB_HOST') != 'localhost':
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('DB_NAME'),
-            'USER': os.environ.get('DB_USER', 'postgres'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-            'HOST': os.environ.get('DB_HOST'),
-            'PORT': os.environ.get('DB_PORT', '5432'),
+elif os.environ.get('DB_NAME'):
+    pg_name = os.environ.get('DB_NAME')
+    pg_user = os.environ.get('DB_USER', 'postgres')
+    pg_password = os.environ.get('DB_PASSWORD', '')
+    pg_host = os.environ.get('DB_HOST', 'localhost')
+    pg_port = os.environ.get('DB_PORT', '5432')
+
+    if _test_postgres(pg_name, pg_user, pg_password, pg_host, pg_port):
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': pg_name,
+                'USER': pg_user,
+                'PASSWORD': pg_password,
+                'HOST': pg_host,
+                'PORT': pg_port,
+            }
         }
-    }
-elif os.environ.get('DB_NAME') and not os.environ.get('RENDER'):
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('DB_NAME', 'mind2i_db3'),
-            'USER': os.environ.get('DB_USER', 'postgres'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', 'Akshar@1502'),
-            'HOST': os.environ.get('DB_HOST', 'localhost'),
-            'PORT': os.environ.get('DB_PORT', '5432'),
+    else:
+        print("[Settings] Falling back to SQLite database: db.sqlite3")
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
         }
-    }
 else:
     DATABASES = {
         'default': {

@@ -6,7 +6,7 @@ services:
     region: oregon
     plan: free
     buildCommand: "./backend/build.sh"
-    startCommand: "cd backend && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"
+    startCommand: "cd backend && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --threads 2 --timeout 120"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
@@ -19,9 +19,9 @@ services:
           name: mind2i-db
           property: connectionString
       - key: ALLOWED_HOSTS
-        value: ".onrender.com,localhost,127.0.0.1"
+        value: ".onrender.com,localhost,127.0.0.1,*"
       - key: CSRF_TRUSTED_ORIGINS
-        value: "https://*.onrender.com,http://localhost:3000"
+        value: "https://*.onrender.com,http://localhost:3000,http://127.0.0.1:3000"
 
   # 2. Node Express + React Frontend Service
   - type: web
@@ -41,6 +41,8 @@ services:
           type: web
           name: mind2i-backend
           property: host
+      - key: PUBLIC_BACKEND_URL
+        sync: false
       - key: GEMINI_API_KEY
         sync: false
 
