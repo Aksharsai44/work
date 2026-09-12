@@ -38,7 +38,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess }) => {
         err.response?.data?.message ||
         (typeof err.response?.data === 'string' && err.response.data.length < 200 ? err.response.data : null);
 
-      if (serverMsg) {
+      if (err.response?.status === 502 || err.response?.status === 504 || (err.message && err.message.includes("502"))) {
+        setError("Cloud server is currently waking up from sleep mode (Render Free Tier). Please wait 10 seconds and click Sign In again!");
+      } else if (serverMsg) {
         setError(serverMsg);
       } else if (err.message) {
         setError(`Login failed: ${err.message}`);

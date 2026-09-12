@@ -155,29 +155,44 @@ async function startServer() {
 
   DJANGO_ROUTES.forEach((route) => {
     app.all(`${route}*`, async (req, res) => {
-      try {
-        const djangoUrl = `${getDjangoBaseUrl()}${req.originalUrl}`;
-        const headers: Record<string, string> = {
-          "Content-Type": req.headers["content-type"] || "application/json",
-        };
-        if (req.headers.authorization) {
-          headers["Authorization"] = req.headers.authorization;
-        }
+      const djangoUrl = `${getDjangoBaseUrl()}${req.originalUrl}`;
+      const headers: Record<string, string> = {
+        "Content-Type": req.headers["content-type"] || "application/json",
+      };
+      if (req.headers.authorization) {
+        headers["Authorization"] = req.headers.authorization;
+      }
 
-        const isBodyAllowed = req.method !== "GET" && req.method !== "HEAD" && req.method !== "DELETE";
-        const response = await axios({
+      const isBodyAllowed = req.method !== "GET" && req.method !== "HEAD" && req.method !== "DELETE";
+
+      const sendRequest = () =>
+        axios({
           method: req.method,
           url: djangoUrl,
           data: isBodyAllowed ? req.body : undefined,
           params: req.query,
           headers,
-          timeout: 30000,
+          timeout: 75000,
           validateStatus: () => true,
         });
+
+      try {
+        let response = await sendRequest();
+
+        // If upstream returns 502/503/504 (Render container spinning up from sleep), retry once after 3s
+        if ([502, 503, 504].includes(response.status)) {
+          console.warn(`Upstream ${response.status} from Django, retrying in 3s (cold start spinup)...`);
+          await new Promise((r) => setTimeout(r, 3000));
+          response = await sendRequest();
+        }
+
         res.status(response.status).json(response.data);
       } catch (err: any) {
         console.error(`Error proxying ${req.method} ${req.originalUrl} to Django (${djangoUrl}):`, err.message);
-        res.status(500).json({ error: "Django backend unreachable", details: err.message });
+        res.status(502).json({
+          error: "Cloud backend is currently waking up from sleep mode. Please retry in a few seconds.",
+          details: err.message,
+        });
       }
     });
   });
