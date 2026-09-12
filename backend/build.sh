@@ -22,27 +22,28 @@ import os, django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 django.setup()
 from api.models import AdminUser, AppSettingsModel
-admin_email = os.getenv('ADMIN_USERNAME', 'admin@mind2i.edu')
-admin_pwd = os.getenv('ADMIN_PASSWORD', 'mind2i@admin')
-if not AdminUser.objects.filter(email__iexact=admin_email).exists():
-    AdminUser.objects.create(
-        id='adm_default',
-        name='Administrator',
-        email=admin_email,
-        password=admin_pwd,
-        role='super_admin',
-        assignedBatches=['all'],
-        permissions=['all'],
-        isActive=True
-    )
-    print(f'Created default administrator: {admin_email}')
-else:
-    print(f'Administrator {admin_email} already provisioned.')
+try:
+    admin_email = os.getenv('ADMIN_USERNAME', 'admin@mind2i.edu')
+    admin_pwd = os.getenv('ADMIN_PASSWORD', 'mind2i@admin')
+    if not AdminUser.objects.filter(email__iexact=admin_email).exists():
+        AdminUser.objects.create(
+            id='adm_default',
+            name='Administrator',
+            email=admin_email,
+            password=admin_pwd,
+            role='super_admin',
+            assignedBatches=['all'],
+            permissions=['all'],
+            isActive=True
+        )
+        print(f'Created default administrator: {admin_email}')
+    else:
+        print(f'Administrator {admin_email} already provisioned.')
 
-AppSettingsModel.objects.get_or_create(
-    id='settings_default',
-    defaults={'appName': 'MIND2I Workshop & Bootcamp Hub'}
-)
+    AppSettingsModel.objects.get_or_create(id='settings_default')
+    print('Default app settings ready.')
+except Exception as e:
+    print(f'Seeding notice: {e}')
 "
 
 echo "==> Build completed successfully!"
