@@ -1,0 +1,27 @@
+name: 24/7 Render Keep-Alive
+
+on:
+  schedule:
+    # Runs every 10 minutes (Render spins down after 15 minutes of inactivity)
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    name: Ping Services
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend Health Endpoint
+        run: |
+          echo "Pinging Backend /health/..."
+          curl -s -f -m 60 https://mind2i-backend.onrender.com/health/ || echo "Backend pinging..."
+
+      - name: Ping Backend API Batches Endpoint
+        run: |
+          echo "Pinging Backend /api/batches/..."
+          curl -s -f -m 60 https://mind2i-backend.onrender.com/api/batches/ || echo "Batches pinging..."
+
+      - name: Ping Frontend Health Check
+        run: |
+          echo "Pinging Frontend /api/health..."
+          curl -s -f -m 60 https://mind2i-frontend.onrender.com/api/health || echo "Frontend pinging..."

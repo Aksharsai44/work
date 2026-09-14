@@ -18,8 +18,14 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from api.views import health_check_view
 
 urlpatterns = [
+    path('', health_check_view, name='root_health'),
+    path('health/', health_check_view, name='health_slash'),
+    path('health', health_check_view, name='health'),
+    path('api/health/', health_check_view, name='core_api_health_slash'),
+    path('api/health', health_check_view, name='core_api_health'),
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
 ]
