@@ -980,7 +980,7 @@ export const ExecutiveEvaluationReport: React.FC<ExecutiveEvaluationReportProps>
   };
 
   const internIdNumber = activeStudent.id.replace(/\D/g, "") || "04";
-  const formattedInternId = `INTERN_${internIdNumber.padStart(2, "0")}`;
+  const formattedInternId = activeStudent.collegeRegNo || activeStudent.id || `REG-${internIdNumber.padStart(3, "0")}`;
   const reportHash = `M2I-REP-2026-X89B4Q-${formattedInternId}`;
   const currentDateFormatted = new Date().toLocaleDateString("en-US", {
     month: "short",
@@ -1205,7 +1205,7 @@ export const ExecutiveEvaluationReport: React.FC<ExecutiveEvaluationReportProps>
               <div
                 onClick={handleTriggerAward}
                 className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center border-2 border-white shadow-xs cursor-pointer"
-                title="Verified Intern"
+                title="Verified Student"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
               </div>
@@ -1234,7 +1234,7 @@ export const ExecutiveEvaluationReport: React.FC<ExecutiveEvaluationReportProps>
                 <span>{student.college || batch.college}</span>
                 <span>•</span>
                 <span className="font-mono text-[11px] text-slate-400">
-                  {student.email || "intern@mind2i.com"}
+                  {student.email || "student@mind2i.edu"}
                 </span>
               </div>
             </div>

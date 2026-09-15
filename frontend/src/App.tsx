@@ -646,6 +646,7 @@ export default function App() {
 
     const fullStudent: Student = {
       id: newStudent.id || `stu_${Date.now()}`,
+      collegeRegNo: newStudent.collegeRegNo || undefined,
       name: newStudent.name || "New Student",
       email: newStudent.email || `student_${Date.now()}@mind2i.edu`,
       mobile: newStudent.mobile || "",
@@ -694,6 +695,7 @@ export default function App() {
   const handleBulkAddStudents = (newStudents: Partial<Student>[]) => {
     const fullList: Student[] = newStudents.map((s, idx) => ({
       id: `stu_bulk_${Date.now()}_${idx}`,
+      collegeRegNo: s.collegeRegNo || undefined,
       name: s.name || `Student ${idx + 1}`,
       email: s.email || `student${idx + 1}@mind2i.edu`,
       mobile: s.mobile || "",
@@ -1510,6 +1512,7 @@ export default function App() {
             onAutoLogin={(newStu) => {
               const fullStu: Student = {
                 id: newStu.id || `stu_${Date.now()}`,
+                collegeRegNo: newStu.collegeRegNo || undefined,
                 name: newStu.name || "Student",
                 email: newStu.email || "",
                 mobile: newStu.mobile || "",

@@ -306,13 +306,13 @@ export const AttendanceManagerView: React.FC<AttendanceManagerViewProps> = ({
   const handleExportAttendanceCsv = () => {
     if (!activeSession) return;
 
-    const headers = "Student Name,Roll ID,College,Email,Attendance Status,Notes,Time Slot,Date\n";
+    const headers = "Student Name,College Reg / Roll No,College,Email,Attendance Status,Notes,Time Slot,Date\n";
     const rows = batchStudents
       .map((s, idx) => {
         const rec = activeSession.records?.find((r) => r.studentId === s.id);
         const status = rec?.status || "unmarked";
         const note = (rec?.notes || "").replace(/"/g, '""');
-        const roll = `INTERN_${String(idx + 1).padStart(2, "0")}`;
+        const roll = s.collegeRegNo || s.id || `REG-${String(idx + 1).padStart(3, "0")}`;
         return `"${s.name}","${roll}","${s.college || selectedBatch.college}","${s.email}","${status.toUpperCase()}","${note}","${activeSession.fromTime} - ${activeSession.toTime}","${activeSession.date}"`;
       })
       .join("\n");
@@ -343,7 +343,9 @@ export const AttendanceManagerView: React.FC<AttendanceManagerViewProps> = ({
       studentSearch.trim() === "" ||
       s.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
       s.email.toLowerCase().includes(studentSearch.toLowerCase()) ||
-      (s.college || "").toLowerCase().includes(studentSearch.toLowerCase());
+      (s.college || "").toLowerCase().includes(studentSearch.toLowerCase()) ||
+      (s.collegeRegNo || "").toLowerCase().includes(studentSearch.toLowerCase()) ||
+      s.id.toLowerCase().includes(studentSearch.toLowerCase());
 
     const rec = activeSessionRecords.find((r) => r.studentId === s.id);
     const currentStatus = rec?.status || "unmarked";
@@ -438,7 +440,7 @@ export const AttendanceManagerView: React.FC<AttendanceManagerViewProps> = ({
             ENROLLED COHORT
           </span>
           <div className="text-2xl font-black text-slate-900 font-mono">
-            {batchStudents.length} <span className="text-xs text-slate-400">Interns</span>
+            {batchStudents.length} <span className="text-xs text-slate-400">Students</span>
           </div>
           <span className="text-[11px] text-teal-600 font-medium block">
             {selectedBatch.name}
@@ -644,7 +646,7 @@ export const AttendanceManagerView: React.FC<AttendanceManagerViewProps> = ({
                 type="text"
                 value={studentSearch}
                 onChange={(e) => setStudentSearch(e.target.value)}
-                placeholder="Search intern by name, email, college..."
+                placeholder="Search student by name, reg no, email, college..."
                 className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-teal-500"
               />
             </div>
@@ -668,8 +670,8 @@ export const AttendanceManagerView: React.FC<AttendanceManagerViewProps> = ({
             <table className="w-full text-left text-xs sm:text-sm">
               <thead className="bg-slate-50/90 text-slate-500 font-extrabold uppercase tracking-wider text-[10px] border-b border-slate-200">
                 <tr>
-                  <th className="py-3.5 pl-4 w-12 text-center">ID</th>
-                  <th className="py-3.5 px-3">Intern Name & College</th>
+                  <th className="py-3.5 pl-4 w-28 text-center">College Reg No</th>
+                  <th className="py-3.5 px-3">Student Name & College</th>
                   <th className="py-3.5 px-3 text-center">Current Status</th>
                   <th className="py-3.5 px-3 text-center">Cumulative Rate</th>
                   <th className="py-3.5 px-3 text-center">Remark / Note</th>
@@ -692,7 +694,7 @@ export const AttendanceManagerView: React.FC<AttendanceManagerViewProps> = ({
                     const isPresent = currentStatus === "present";
                     const isAbsent = currentStatus === "absent";
                     const isLate = currentStatus === "late";
-                    const rollId = `INTERN_${String(idx + 1).padStart(2, "0")}`;
+                    const rollId = student.collegeRegNo || student.id || `REG-${String(idx + 1).padStart(3, "0")}`;
 
                     return (
                       <tr
@@ -702,7 +704,7 @@ export const AttendanceManagerView: React.FC<AttendanceManagerViewProps> = ({
                         }`}
                       >
                         {/* ID */}
-                        <td className="py-3.5 pl-4 text-center font-mono text-[11px] font-bold text-slate-500">
+                        <td className="py-3.5 pl-4 text-center font-mono text-[11px] font-bold text-slate-600">
                           {rollId}
                         </td>
 

@@ -137,9 +137,12 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                 </span>
               </div>
 
-              <div className="pt-0.5">
+              <div className="pt-0.5 flex items-center gap-2 flex-wrap">
                 <span className="text-[11px] font-extrabold px-2.5 py-0.5 bg-indigo-500/20 text-indigo-300 rounded-lg border border-indigo-500/30">
                   {student.batchName || "Enrolled Batch"}
+                </span>
+                <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 bg-sky-500/20 text-sky-300 rounded-lg border border-sky-500/30">
+                  {student.collegeRegNo ? `Reg No: ${student.collegeRegNo}` : `ID: ${student.id.slice(0, 10)}`}
                 </span>
               </div>
             </div>

@@ -14,6 +14,7 @@ export interface Batch {
   studentCount: number;
   description: string;
   registrationCode: string;
+  isLocked?: boolean;
   zoomLink?: string;
   zoomConfig?: {
     topic: string;
@@ -33,6 +34,7 @@ export interface Batch {
 
 export interface Student {
   id: string;
+  collegeRegNo?: string; // College Registration Number / Roll Number
   name: string;
   email: string;
   mobile: string;

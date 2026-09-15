@@ -32,6 +32,8 @@ import {
   Info,
   CheckCircle2,
   Star,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import QRCode from "qrcode";
 import { Minda2Logo } from "./Minda2Logo";
@@ -118,6 +120,7 @@ export const BatchManagementView: React.FC<BatchManagementViewProps> = ({
 
   // Manual Add Student form state
   const [manualName, setManualName] = useState("");
+  const [manualCollegeRegNo, setManualCollegeRegNo] = useState("");
   const [manualEmail, setManualEmail] = useState("");
   const [manualMobile, setManualMobile] = useState("");
   const [manualCollege, setManualCollege] = useState(selectedBatch.college);
@@ -240,7 +243,9 @@ export const BatchManagementView: React.FC<BatchManagementViewProps> = ({
     (s) =>
       s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.mobile.includes(searchQuery),
+      s.mobile.includes(searchQuery) ||
+      (s.collegeRegNo && s.collegeRegNo.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      s.id.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // Handlers for Batch Creation
@@ -339,6 +344,20 @@ export const BatchManagementView: React.FC<BatchManagementViewProps> = ({
     setDeletingBatch(null);
   };
 
+  // Handler to toggle Batch Lock status
+  const handleToggleBatchLock = async (b: Batch) => {
+    const updatedLocked = !b.isLocked;
+    const updatedBatch: Batch = { ...b, isLocked: updatedLocked };
+    if (onUpdateBatch) {
+      onUpdateBatch(updatedBatch);
+    }
+    try {
+      await axios.patch(`/api/batches/${b.id}/`, { isLocked: updatedLocked });
+    } catch (err: any) {
+      console.error("Failed to update batch lock status:", err);
+    }
+  };
+
   // Handlers for Student Registration
   const handleManualAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -346,6 +365,7 @@ export const BatchManagementView: React.FC<BatchManagementViewProps> = ({
 
     onAddStudent({
       name: manualName,
+      collegeRegNo: manualCollegeRegNo.trim() || undefined,
       email: manualEmail,
       mobile: manualMobile || "",
       college: manualCollege || selectedBatch.college,
@@ -373,6 +393,7 @@ export const BatchManagementView: React.FC<BatchManagementViewProps> = ({
 
     setShowAddStudentModal(false);
     setManualName("");
+    setManualCollegeRegNo("");
     setManualEmail("");
     setManualMobile("");
     setManualCollege(selectedBatch.college);
@@ -401,14 +422,40 @@ export const BatchManagementView: React.FC<BatchManagementViewProps> = ({
   const handleProcessCsvSubmit = () => {
     if (!csvContent) return;
     const lines = csvContent.split("\n").filter((l) => l.trim().length > 0);
+    if (lines.length <= 1) return;
+
+    const headerLine = lines[0].toLowerCase();
+    const headers = headerLine.split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
+    const regIdx = headers.findIndex((h) => h.includes("reg") || h.includes("roll"));
+
     const rows = lines.slice(1);
 
     const parsedList: Partial<Student>[] = rows.map((line, idx) => {
-      const [name, email, mobile, college, branch, city, state, password] = line
-        .split(",")
-        .map((c) => c?.trim().replace(/^"|"$/g, ""));
+      const cols = line.split(",").map((c) => c?.trim().replace(/^"|"$/g, ""));
+      let name = cols[0];
+      let regNo = regIdx !== -1 ? cols[regIdx] : undefined;
+      let email = cols[1];
+      let mobile = cols[2];
+      let college = cols[3];
+      let branch = cols[4];
+      let city = cols[5];
+      let state = cols[6];
+      let password = cols[7];
+
+      // If reg column was in position 1: Name, RegNo, Email, Mobile...
+      if (regIdx === 1) {
+        email = cols[2];
+        mobile = cols[3];
+        college = cols[4];
+        branch = cols[5];
+        city = cols[6];
+        state = cols[7];
+        password = cols[8];
+      }
+
       return {
         name: name || `Student ${idx + 1}`,
+        collegeRegNo: regNo || undefined,
         email: email || `student${idx + 1}@mind2i.edu`,
         mobile: mobile || "",
         college: college || selectedBatch.college,
@@ -464,11 +511,11 @@ export const BatchManagementView: React.FC<BatchManagementViewProps> = ({
 
   const handleExportRosterCsv = () => {
     const headers =
-      "Name,Mobile Number,Batch Name,Email ID,Accuracy,Points,Status\n";
+      "Name,College Reg No,Mobile Number,Batch Name,Email ID,Accuracy,Points,Status\n";
     const rows = batchStudents
       .map(
         (s) =>
-          `"${s.name}","${s.mobile}","${s.batchName}","${s.email}",${s.scores?.overallAccuracy ?? 0}%,${s.totalPoints ?? 0},"${s.status}"`,
+          `"${s.name}","${s.collegeRegNo || s.id}","${s.mobile}","${s.batchName}","${s.email}",${s.scores?.overallAccuracy ?? 0}%,${s.totalPoints ?? 0},"${s.status}"`,
       )
       .join("\n");
     const blob = new Blob([headers + rows], {
@@ -566,10 +613,36 @@ export const BatchManagementView: React.FC<BatchManagementViewProps> = ({
                     <span className="text-[11px] font-bold text-slate-500">
                       {b.durationLabel}
                     </span>
+                    {b.isLocked && (
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md border flex items-center gap-1 bg-amber-100 text-amber-800 border-amber-300">
+                        <Lock className="w-2.5 h-2.5 text-amber-700" />
+                        <span>Locked</span>
+                      </span>
+                    )}
                   </div>
 
-                  {/* Batch Card Actions (QR, Edit, Delete) */}
+                  {/* Batch Card Actions (Lock, QR, Edit, Delete) */}
                   <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleBatchLock(b);
+                      }}
+                      className={`p-1.5 rounded-lg transition cursor-pointer ${
+                        b.isLocked
+                          ? "bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300 shadow-xs"
+                          : "bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800"
+                      }`}
+                      title={b.isLocked ? "Batch is Locked (Click to Unlock)" : "Lock Batch (Pause self-registration)"}
+                    >
+                      {b.isLocked ? (
+                        <Lock className="w-3.5 h-3.5 text-amber-700" />
+                      ) : (
+                        <Unlock className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+
                     <button
                       type="button"
                       onClick={(e) => {
@@ -577,7 +650,7 @@ export const BatchManagementView: React.FC<BatchManagementViewProps> = ({
                         onSelectBatch(b);
                         setQrModalBatch(b);
                       }}
-                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-sky-100 text-slate-600 hover:text-sky-700 transition"
+                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-sky-100 text-slate-600 hover:text-sky-700 transition cursor-pointer"
                       title="View & Download QR Code"
                     >
                       <QrCode className="w-3.5 h-3.5" />
@@ -693,6 +766,28 @@ export const BatchManagementView: React.FC<BatchManagementViewProps> = ({
       {/* 3. ROSTER PANEL FOR SELECTED BATCH                                        */}
       {/* ========================================================================= */}
       <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 space-y-5">
+        {/* Batch Locked Notification Banner */}
+        {selectedBatch.isLocked && (
+          <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between gap-3 text-xs font-bold text-amber-900 shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 flex-shrink-0">
+                <Lock className="w-4 h-4" />
+              </div>
+              <div>
+                <span>This batch is currently <strong>Locked</strong>.</span>
+                <span className="text-amber-700 font-medium block text-[11px]">Self-registration via QR code and link are paused.</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleToggleBatchLock(selectedBatch)}
+              className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black transition cursor-pointer flex-shrink-0 shadow-xs"
+            >
+              Unlock Batch
+            </button>
+          </div>
+        )}
+
         {/* Roster Header with Search Bar and Actions */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
@@ -804,8 +899,8 @@ export const BatchManagementView: React.FC<BatchManagementViewProps> = ({
                           <div className="font-extrabold text-slate-900">
                             {stu.name}
                           </div>
-                          <div className="text-[11px] text-slate-400 font-mono">
-                            ID: {stu.id.slice(0, 8)}
+                          <div className="text-[11px] text-slate-500 font-mono font-bold">
+                            {stu.collegeRegNo ? `Reg No: ${stu.collegeRegNo}` : `ID: ${stu.id.slice(0, 10)}`}
                           </div>
                         </div>
                       </div>
@@ -1683,6 +1778,19 @@ export const BatchManagementView: React.FC<BatchManagementViewProps> = ({
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-700 uppercase mb-0.5">
+                    College Registration / Roll No
+                  </label>
+                  <input
+                    type="text"
+                    value={manualCollegeRegNo}
+                    onChange={(e) => setManualCollegeRegNo(e.target.value)}
+                    placeholder="e.g. 22B91A0501 / CS101"
+                    className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-sky-500 font-mono font-bold text-slate-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-700 uppercase mb-0.5">
                     Email ID (Username) *
                   </label>
                   <input
@@ -1815,7 +1923,7 @@ export const BatchManagementView: React.FC<BatchManagementViewProps> = ({
               <p className="text-xs text-slate-500">
                 Upload a standard CSV file with headers:{" "}
                 <code className="bg-slate-100 px-1 py-0.5 rounded text-sky-700 font-mono font-bold">
-                  Name, Email, Mobile, College, Branch, City, State, Default Password
+                  Name, College Reg No, Email, Mobile, College, Branch, City, State, Default Password
                 </code>
                 . If Default Password is not provided, the system default setting will be used.
               </p>

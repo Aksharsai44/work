@@ -14,12 +14,14 @@ class Batch(models.Model):
     registrationCode = models.CharField(max_length=50, blank=True, null=True)
     zoomLink = models.CharField(max_length=500, blank=True, null=True)
     zoomConfig = models.JSONField(default=dict, blank=True, null=True)
+    isLocked = models.BooleanField(default=False)
     
     def __str__(self):
         return self.name
 
 class Student(models.Model):
     id = models.CharField(primary_key=True, max_length=100)
+    collegeRegNo = models.CharField(max_length=100, blank=True, null=True)
     name = models.CharField(max_length=255)
     email = models.EmailField()
     mobile = models.CharField(max_length=20)

@@ -30,6 +30,7 @@ export const BatchRegistrationModal: React.FC<BatchRegistrationModalProps> = ({
   onClose,
 }) => {
   const [name, setName] = useState("");
+  const [collegeRegNo, setCollegeRegNo] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [college, setCollege] = useState(batch.college);
@@ -57,8 +58,9 @@ export const BatchRegistrationModal: React.FC<BatchRegistrationModalProps> = ({
     if (found) {
       setIsExistingUser(true);
       setName(found.name);
+      setCollegeRegNo(found.collegeRegNo || "");
       setMobile(found.mobile);
-      setCollege(found.college);
+      setCollege(found.college || batch.college);
       setBranch(found.branch || "");
       setCity(found.city || "");
       setStateValue(found.state || "");
@@ -71,6 +73,11 @@ export const BatchRegistrationModal: React.FC<BatchRegistrationModalProps> = ({
     e.preventDefault();
     setErrorMsg("");
 
+    if (batch.isLocked) {
+      setErrorMsg("This batch has been locked by the administrator. New registrations are closed.");
+      return;
+    }
+
     if (!isExistingUser && password && password !== confirmPassword) {
       setErrorMsg("Passwords do not match!");
       return;
@@ -78,6 +85,7 @@ export const BatchRegistrationModal: React.FC<BatchRegistrationModalProps> = ({
 
     const newStudentData: Partial<Student> = {
       name,
+      collegeRegNo: collegeRegNo.trim() || undefined,
       email,
       mobile,
       college,
@@ -130,7 +138,23 @@ export const BatchRegistrationModal: React.FC<BatchRegistrationModalProps> = ({
           </button>
         </div>
 
-        {registrationSuccess ? (
+        {batch.isLocked ? (
+          <div className="text-center py-8 space-y-4 my-auto">
+            <div className="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto shadow-md">
+              <Lock className="w-7 h-7" />
+            </div>
+            <h3 className="text-lg font-black text-slate-900">Registration Locked</h3>
+            <p className="text-xs text-slate-500 max-w-xs mx-auto">
+              Self-registration for <strong>{batch.name}</strong> has been locked by the administrator. Please contact your workshop coordinator for enrollment assistance.
+            </p>
+            <button
+              onClick={onClose}
+              className="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl shadow-md transition cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
+        ) : registrationSuccess ? (
           <div className="text-center py-6 space-y-4 my-auto">
             <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-md">
               <CheckCircle2 className="w-7 h-7" />
@@ -185,6 +209,20 @@ export const BatchRegistrationModal: React.FC<BatchRegistrationModalProps> = ({
                   onBlur={handleEmailBlur}
                   placeholder="you@university.edu"
                   className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-700 uppercase mb-0.5">
+                  College Reg / Roll No *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={collegeRegNo}
+                  onChange={(e) => setCollegeRegNo(e.target.value)}
+                  placeholder="e.g. 22B91A0501"
+                  className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500 font-mono font-bold text-slate-800"
                 />
               </div>
 
