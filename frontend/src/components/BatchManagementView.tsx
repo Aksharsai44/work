@@ -2010,6 +2010,24 @@ export const BatchManagementView: React.FC<BatchManagementViewProps> = ({
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  College Registration / Roll No
+                </label>
+                <input
+                  type="text"
+                  value={editingStudent.collegeRegNo || ""}
+                  onChange={(e) =>
+                    setEditingStudent({
+                      ...editingStudent,
+                      collegeRegNo: e.target.value,
+                    })
+                  }
+                  placeholder="e.g. 22B91A0501 / CS101"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-sky-500 font-mono font-bold text-slate-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
                   Email ID *
                 </label>
                 <input

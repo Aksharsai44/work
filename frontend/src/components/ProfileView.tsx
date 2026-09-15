@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { UserRole, Student } from "../types";
 import {
@@ -62,6 +62,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   // Form State
   const [name, setName] = useState(currentStudent?.name || "Student");
+  const [collegeRegNo, setCollegeRegNo] = useState(currentStudent?.collegeRegNo || "");
   const [mobile, setMobile] = useState(currentStudent?.mobile || "");
   const [college, setCollege] = useState(currentStudent?.college || "");
   const [branch, setBranch] = useState(currentStudent?.branch || "");
@@ -77,6 +78,22 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     currentStudent?.avatar ||
       `https://api.dicebear.com/7.x/bottts/svg?seed=${currentStudent?.name || "Student"}`
   );
+
+  useEffect(() => {
+    if (currentStudent) {
+      setName(currentStudent.name || "Student");
+      setCollegeRegNo(currentStudent.collegeRegNo || "");
+      setMobile(currentStudent.mobile || "");
+      setCollege(currentStudent.college || "");
+      setBranch(currentStudent.branch || "");
+      setCity(currentStudent.city || "");
+      setStateValue(currentStudent.state || "");
+      if (currentStudent.bio) setBio(currentStudent.bio);
+      if (currentStudent.githubUrl) setGithubUrl(currentStudent.githubUrl);
+      if (currentStudent.linkedinUrl) setLinkedinUrl(currentStudent.linkedinUrl);
+      if (currentStudent.avatar) setAvatar(currentStudent.avatar);
+    }
+  }, [currentStudent]);
 
   // Security / Password State
   const [currentPassword, setCurrentPassword] = useState("");
@@ -121,6 +138,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     const updatedStudent: Student = {
       ...currentStudent,
       name: name.trim(),
+      collegeRegNo: collegeRegNo.trim(),
       mobile: mobile.trim(),
       college: college.trim(),
       branch: branch.trim(),
@@ -137,6 +155,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       // Persist to Django PostgreSQL / SQLite Backend
       await axios.patch(`/api/students/${currentStudent.id}/`, {
         name: updatedStudent.name,
+        collegeRegNo: updatedStudent.collegeRegNo,
         mobile: updatedStudent.mobile,
         college: updatedStudent.college,
         branch: updatedStudent.branch,
@@ -495,6 +514,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-1">
+                      <span className="text-slate-500">College Reg / Roll No</span>
+                      <span className="font-bold text-slate-900 font-mono">
+                        {currentStudent?.collegeRegNo || currentStudent?.id || "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-1">
                       <span className="text-slate-500">College / Institution</span>
                       <span className="font-bold text-slate-900">
                         {currentStudent?.college || "Mind2i Institute of Technology"}
@@ -600,6 +625,22 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     placeholder="e.g. Alex Johnson"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-indigo-500 bg-white"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                    College Registration / Roll No
+                  </label>
+                  <div className="relative">
+                    <FileText className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={collegeRegNo}
+                      onChange={(e) => setCollegeRegNo(e.target.value)}
+                      placeholder="e.g. 22B91A0501 / CS101"
+                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold font-mono focus:ring-2 focus:ring-indigo-500 bg-white"
+                    />
+                  </div>
                 </div>
 
                 <div>
